@@ -2,7 +2,7 @@
 找到一个不错的gulp入门教程，按照教程试了一下    
 教程链接 → [点击这里](http://www.ydcss.com/archives/18)
 
-下面是最终的`gulpfile.js
+下面是最终的`gulpfile.js`
 ```
 //导入工具包 require('node_modules里对应模块')
 var gulp = require('gulp'), //本地安装gulp所用到的地方
