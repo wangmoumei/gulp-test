@@ -1,91 +1,250 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
+    <meta charset="utf-8">
     <script type="text/javascript" src="../../node_modules/jquery/dist/jquery.min.js"></script>
     <!--script type="text/javascript" src="http://knockoutjs.com/js/jquery.tmpl.js"></script-->
     <script type="text/javascript" src="../../node_modules/knockout/build/output/knockout-latest.js"></script>
+    <style>
+    *{
+        padding:0;margin:0;font-family: 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    body{
+        padding:50px;
+    }
+        label{
+            cursor: pointer
+        }
+        ul.todo-list li{
+            list-style: none;
+            border-left-width: 5px;
+            border-left-style: solid;
+            padding-left: 10px;
+            margin: 3px;
+        }
+        ul.todo-list li.do{
+            border-left-color: #337ab7
+        }
+        ul.todo-list li.doing{
+            border-left-color: #5cb85c
+        }
+        ul.todo-list li.done{
+            border-left-color: #f0ad4e
+        }
+        ul.todo-list li p{
+            overflow: hidden; 
+            white-space: nowrap; 
+            -webkit-text-overflow:ellipsis; 
+            -khtml-text-overflow: ellipsis;  
+            -icab-text-overflow: ellipsis;  
+            -moz-text-overflow: ellipsis;  
+            -o-text-overflow: ellipsis;  
+            text-overflow: ellipsis; 
+            width: 300px;
+            color: #888;
+        }
+        .radio-box{
+            padding: 10px;
+        }
+        .radio-box label{
+            padding: 10px;
+        }
+        .btn{
+            font-size: 12px;
+            color: #337ab7;
+            cursor: pointer;
+        }
+        .deleted{
+            color: #999;
+        }
+        .empty{
+            padding: 10px;
+            color: #666;
+            border-left: 5px solid #aaa;
+            margin: 3px;
+        }
+    </style>
 </head>
 <body>
-<h2>People</h2>
-<h2>Planets</h2>
-<p> 
-    <label>
-        <input type='checkbox' data-bind='checked: displayAdvancedOptions' />
-        Display advanced options
-    </label>
-</p>
- 
-<p data-bind='fadeVisible: displayAdvancedOptions'>
-    Show:
-    <label><input type='radio' name="type" value='all' data-bind='checked: typeToShow' />All</label>
-    <label><input type='radio' name="type" value='rock' data-bind='checked: typeToShow' />Rocky planets</label>
-    <label><input type='radio' name="type" value='gasgiant' data-bind='checked: typeToShow' />Gas giants</label>
-</p>
- 
-<div data-bind='template: { foreach: planetsToShow,
-                            beforeRemove: hidePlanetElement,
-                            afterAdd: showPlanetElement }'>
-    <div data-bind='attr: { "class": "planet " + type }, text: name'> </div>
+<h2>todo list</h2>
+<div class="radio-box">
+    <label for="all"><input type="radio" id="all" value="all" name="status" checked="checked" data-bind="event:{change:changeStatus}" />所有(<span data-bind="text:allCount"></span>)</label>
+    <label for="do"><input type="radio" id="do" value="do" name="status" data-bind="event:{change:changeStatus}" />尚未开始(<span data-bind="text:doCount"></span>)</label>
+    <label for="doing"><input type="radio" id="doing" value="doing" name="status" data-bind="event:{change:changeStatus}" />正在进行(<span data-bind="text:doingCount"></span>)</label>
+    <label for="done"><input type="radio" id="done" value="done" name="status" data-bind="event:{change:changeStatus}" />已完成(<span data-bind="text:doneCount"></span>)</label>
+    | <label class="deleted" for="deleted"><input type="radio" id="deleted" value="deleted" name="status" data-bind="event:{change:changeStatus}" />已删除(<span data-bind="text:deletedCount"></span>)</label>
 </div>
- 
-<p data-bind='fadeVisible: displayAdvancedOptions'>
-    <button data-bind='click: addPlanet.bind($data, "rock")'>Add rocky planet</button>
-    <button data-bind='click: addPlanet.bind($data, "gasgiant")'>Add gas giant</button>
-</p>
+<ul class="todo-list" data-bind='foreach: todoList'>
+    <li data-bind = "css:{do:status==2,doing:status==1,done:!status}">
+        <h3 data-bind = "text: name"></h5>
+        <p data-bind = "text: description,attr:{title:description}"></p>
+        <a class="btn" data-bind="visible:!isDelete && status==2,click:vm.start">开始</a>
+        <a class="btn" data-bind="visible:!isDelete && (status==1 || status==2),click:vm.finish">完成</a>
+        <a class="btn" data-bind="visible:!isDelete && status==0,click:vm.restart">重新开始</a>
+        <a class="btn" data-bind="visible:!isDelete,click:vm.deleteItem">删除</a>
+        <a class="btn" data-bind="visible:isDelete,click:vm.restore">还原</a>
+    </li>
+</ul>
+<div class="empty" data-bind="visible:todoList().length<1">一个任务也没有，空空如也</div>
+<hr>
+<form action="javascript:;" data-bind="submit:addToList">
+    <h2>new todo</h2>
+    <p>name:*</p>
+    <input type="text" name="name" id="name" data-bind="value:formData.name">
+    <p>description:</p>
+    <textarea name="description" id="description" cols="30" rows="10" data-bind="value:formData.description"></textarea>
+    <br>
+    <input type="submit" value="提交">
+</form>
 <script type="text/javascript">
-var PlanetsModel = function() {
-    this.planets = ko.observableArray([
-        { name: "Mercury", type: "rock"},
-        { name: "Venus", type: "rock"},
-        { name: "Earth", type: "rock"},
-        { name: "Mars", type: "rock"},
-        { name: "Jupiter", type: "gasgiant"},
-        { name: "Saturn", type: "gasgiant"},
-        { name: "Uranus", type: "gasgiant"},
-        { name: "Neptune", type: "gasgiant"}
-    ]);
- 
-    this.typeToShow = ko.observable("all");
-    this.displayAdvancedOptions = ko.observable(false);
- 
-    this.addPlanet = function(type) {
-        this.planets.push({
-            name: "New planet",
-            type: type
-        });
-    };
- 
-    this.planetsToShow = ko.pureComputed(function() {
-        // Represents a filtered list of planets
-        // i.e., only those matching the "typeToShow" condition
-        var desiredType = this.typeToShow();
-        if (desiredType == "all") return this.planets();
-        return ko.utils.arrayFilter(this.planets(), function(planet) {
-            return planet.type == desiredType;
-        });
-    }, this);
- 
-    // Animation callbacks for the planets list
-    this.showPlanetElement = function(elem) { if (elem.nodeType === 1) $(elem).hide().slideDown() }
-    this.hidePlanetElement = function(elem) { if (elem.nodeType === 1) $(elem).slideUp(function() { $(elem).remove(); }) }
-};
- 
-// Here's a custom Knockout binding that makes elements shown/hidden via jQuery's fadeIn()/fadeOut() methods
-// Could be stored in a separate utility library
-ko.bindingHandlers.fadeVisible = {
-    init: function(element, valueAccessor) {
-        // Initially set the element to be instantly visible/hidden depending on the value
-        var value = valueAccessor();
-        $(element).toggle(ko.unwrap(value)); // Use "unwrapObservable" so we can handle values that may or may not be observable
-    },
-    update: function(element, valueAccessor) {
-        // Whenever the value subsequently changes, slowly fade the element in or out
-        var value = valueAccessor();
-        ko.unwrap(value) ? $(element).fadeIn() : $(element).fadeOut();
+
+var todoList = [
+    {
+        name:"aaaa",
+        description:"aaaaaaaaaaaaaaaaaaaaaaaa",
+        status:0,
+        sort:1,
+        isDelete:true
+    },{
+        name:"bbbb",
+        description:"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        status:0,
+        sort:2,
+        isDelete:false
+    },{
+        name:"cccc",
+        description:"cccccccccccccccccc",
+        status:1,
+        sort:3,
+        isDelete:false
+    },{
+        name:"dddd",
+        description:"dddddddddddd",
+        status:2,
+        sort:4,
+        isDelete:false
     }
-};
- 
-ko.applyBindings(new PlanetsModel());
+];
+
+var vm = {
+    changeStatus:function(data,event){
+        var statusValue = event.target.value;
+        data.status = statusValue;
+        data.listFilter();
+        // console.log(data);
+    },
+    listFilter:function(){
+        var that = this;
+        that.todoList.removeAll();
+        if(todoList.length > 0)
+            switch(that.status){
+                case "all":
+                    $.map(todoList,function(item){
+                        if(!item.isDelete)
+                            that.todoList.push(item);
+                    })
+                    break;
+                case "do":
+                    $.map(todoList,function(item){
+                        if(!item.isDelete && item.status == 2)
+                            that.todoList.push(item);
+                    })
+                    break;
+                case "doing":
+                    $.map(todoList,function(item){
+                        if(!item.isDelete && item.status == 1)
+                            that.todoList.push(item);
+                    })
+                    break;
+                case "done":
+                    $.map(todoList,function(item){
+                        if(!item.isDelete && !item.status)
+                            that.todoList.push(item);
+                    })
+                    break;
+                case "deleted":
+                    $.map(todoList,function(item){
+                        if(item.isDelete)
+                            that.todoList.push(item);
+                    })
+                    break;
+        }
+        that.todoList.sort(function(left,right){
+            if(left.status == right.status){
+                return left.sort>right.sort
+            }else if(left.status == 1 || right.status == 1){
+                return right.status==1;
+            }else
+                return left.status<right.status
+        })
+    },
+    status:"all",
+    todoList : ko.observableArray([]),
+    computeCount : function(){
+        var counts = [0,0,0];
+        $.map(todoList,function(item){
+            if(!item.isDelete)
+                counts[item.status] ++ ;
+        });
+        // console.log(counts);
+        this.allCount(counts[0]+counts[1]+counts[2]);
+        // this.allCount(todoList.length);
+        this.doCount(counts[2]);
+        this.doingCount(counts[1]);
+        this.doneCount(counts[0]);
+        this.deletedCount(todoList.length - this.allCount());
+        this.listFilter();
+    },
+    allCount:ko.observable(0),
+    doCount:ko.observable(0),
+    doingCount:ko.observable(0),
+    doneCount:ko.observable(0),
+    deletedCount:ko.observable(0),
+    addToList: function(event){
+        console.log(this.formData)
+        if(this.formData.name().length<1)
+            // this.formData.focus;
+            return;
+        else{
+            todoList.push({
+                name:this.formData.name(),
+                description:this.formData.description(),
+                status:2,
+                sort:todoList.length,
+                isDelete:false
+            })
+        }
+        this.computeCount();
+    },
+    formData:{
+        name:ko.observable(""),
+        description:ko.observable("")
+    },
+    deleteItem:function(data,event){
+        data.isDelete = true;
+        vm.computeCount();
+    },
+    restore:function(data,event){
+        data.isDelete = false;
+        vm.computeCount();
+    },
+    start:function(data,event){
+        data.status = 1;
+        vm.computeCount();
+    },
+    finish:function(data,event){
+        data.status = 0;
+        vm.computeCount();
+    },
+    restart:function(data,event){
+        data.status = 1;
+        vm.computeCount();
+    }
+}
+
+ko.applyBindings(vm);
+vm.listFilter();
+vm.computeCount();
 </script>
 </body>
 </html>
