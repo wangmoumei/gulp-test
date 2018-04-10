@@ -3,7 +3,7 @@
 教程链接 → [点击这里](http://www.ydcss.com/archives/18)
 
 下面是最终的`gulpfile.js`
-```
+```javascript
 //导入工具包 require('node_modules里对应模块')
 var gulp = require('gulp'), //本地安装gulp所用到的地方
     less = require('gulp-less'), //less编译
